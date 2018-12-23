@@ -3,82 +3,191 @@ package minesweeper;
 import java.util.Random;
 
 public class Board {
-    int size = 10;
-    int bombs = 23;
-    int revealed = 5;
-    char[] alphabet = "abcdefghijklmnopqrstuvwxyz".toCharArray();
-    Field[][] fields;;
+    private int size = 10;
+    private int bombs = 23;
+    private int revealed = 0;
+    private String alphabet = "abcdefghijklmnopqrstuvwxyz";
+    private Field[][] fields;
 
     public Board() {
-        this.fields = new Field[size][size];
+        this.fields = new Field[this.size][this.size];
         // Initialize Fields
-        for (int x = 0; x < size; x++) {
-            for (int y = 0; y < size; y++) {
-                this.fields[x][y] = new EmptyField();
+        for (int x = 0; x < this.size; x++) {
+            for (int y = 0; y < this.size; y++) {
+                this.fields[x][y] = new EmptyField(x, y);
             }
         }
         // Initialize Mined Fields
         Random rand = new Random();
         int b;
-        for (b = 0; b < bombs; b++) {
-            int bombX = rand.nextInt(size);
-            int bombY = rand.nextInt(size);
-            while (!this.fields[bombX][bombY].reveal()) {
-                bombX = rand.nextInt(size);
-                bombY = rand.nextInt(size);
+        for (b = 0; b < this.bombs; b++) {
+            int bombX = rand.nextInt(this.size);
+            int bombY = rand.nextInt(this.size);
+            while (this.fields[bombX][bombY].reveal()) {
+                bombX = rand.nextInt(this.size);
+                bombY = rand.nextInt(this.size);
             }
-            this.fields[bombX][bombY] = new MinedField();
-
+            this.fields[bombX][bombY] = new MinedField(bombX, bombY);
         }
     }
+
+    public Integer getSize() {
+        return this.size;
+    }
+
+    public Integer getRevealed() {
+        return this.revealed;
+    }
+
+    public Integer getBombed() {
+        return this.bombs;
+    }
+
 
     /**
      * Prints the current state of the field
      */
     public void print() {
         String output = "     ";
+        Field currentField;
         // Generating the tableheader
-        for (int i = 0; i < size; i++) {
+        for (int i = 0; i < this.size; i++) {
             output += "|";
-            output += " " + Character.toUpperCase(alphabet[i]) + " ";
+            output += "-" + this.alphabet.substring(i,i + 1).toUpperCase() + "-";
         }
         output += "|\n";
         output += "--";
-        for (int counter = 0; counter < size + 1; counter++) {
+        for (int counter = 0; counter < this.size + 1; counter++) {
             output += "----";
         }
         output += "\n";
-        for (int y = 0; y < size;y++) {
-            for (int x = 0; x < size + 1;x++) {
+        for (int y = 0; y < this.size;y++) {
+            for (int x = 0; x < this.size + 1;x++) {
                 output += "|";
                 if (x == 0) {
                     // Formatting numbers
-                    output += ((y + 1) >= 10) ? " ": "  " ;
-                    output += (y+1) + " ";
+                    output += ((y + 1) >= 10) ? "-": "--" ;
+                    output += (y+1) + "-";
                 } else {
                     // Actual Board
-                    // Show Mined and Empty fields
-                    if (this.fields[x - 1][y].reveal()) {
-                        if (this.fields[x - 1][y].isRevealed) {
-                            output += "   ";
+                    currentField = this.fields[x - 1][y];
+                    if (currentField.isRevealed) {
+                        if (!currentField.reveal()) {
+                            output += " " + this.getBombCount(currentField) + " ";
+                        } else {
+                            output += currentField.print();
                         }
-                        output += "###";
+                    } else if (currentField.isMarked) {
+                        output += "#?#";
                     } else {
-                        output += " O ";
+                        output += "###";
                     }
                 }
-                if (x == size) {
+                if (x == this.size) {
                     output += "|";
                 }
             }
             output += "\n";
             output += "--";
-            for (int counter = 0; counter < size + 1; counter++) {
+            for (int counter = 0; counter < this.size + 1; counter++) {
                 output += "----";
             }
             output += "\n";
         }
 
         System.out.println(output);
+    }
+
+    private Field getFieldFromCoordinates (String coordinates) {
+        int x = this.alphabet.indexOf(coordinates.substring(0, 1).toLowerCase());
+        int y = Integer.parseInt(coordinates.substring(1));
+        return this.fields[x][y - 1];
+    }
+
+    public void markField(String coordinates)  {
+        Field field = getFieldFromCoordinates(coordinates);
+        field.isMarked = true;
+    }
+
+    public Boolean revealField(String coordinates)  {
+        Field field = getFieldFromCoordinates(coordinates);
+        field.isVisited = true;
+        if (this.getBombCount(field) == 0) {
+            this.recursiveReveal(field);
+        } else {
+            field.isRevealed = true;
+            this.revealed++;
+        }
+        return field.reveal();
+    }
+
+    private void recursiveReveal(Field field) {
+        Integer[] neighbours = new Integer[] {1, 0, -1};
+        Integer neighbourX;
+        Integer neighbourY;
+
+        if (!field.isRevealed) {
+            this.revealed++;
+        }
+
+        for (int i:neighbours) {
+            neighbourX = field.x + i;
+            for(int j:neighbours) {
+                neighbourY = field.y + j;
+                if (neighbourX >= 0 && neighbourX < this.size
+                    && neighbourY >= 0 && neighbourY < this.size
+                    && !this.fields[neighbourX][neighbourY].reveal()) {
+                    if (!this.fields[neighbourX][neighbourY].isVisited
+                        && this.getBombCount(this.fields[neighbourX][neighbourY]) == 0) {
+
+                        field.isRevealed = true;
+                        this.revealNeighbours(field);
+                        field.isVisited = true;
+                        this.recursiveReveal(this.fields[neighbourX][neighbourY]);
+                    }
+                }
+            }
+        }
+    }
+
+    private void revealNeighbours(Field field) {
+        Integer[] neighbours = new Integer[] {1, 0, -1};
+        Integer neighbourX;
+        Integer neighbourY;
+
+        for (int i:neighbours) {
+            neighbourX = field.x + i;
+            for(int j:neighbours) {
+                neighbourY = field.y + j;
+                if (neighbourX >= 0 && neighbourX < this.size
+                    && neighbourY >= 0 && neighbourY < this.size
+                    && !this.fields[neighbourX][neighbourY].reveal()) {
+                        if (!this.fields[neighbourX][neighbourY].isRevealed) {
+                            this.revealed++;
+                            this.fields[neighbourX][neighbourY].isRevealed = true;
+                        }
+                }
+            }
+        }
+    }
+
+    private Integer getBombCount(Field field) {
+        Integer[] neighbours = new Integer[] {1, 0, -1};
+        Integer neighbourX;
+        Integer neighbourY;
+        int bombCount = 0;
+
+        for (int i:neighbours) {
+            neighbourX = field.x + i;
+            for(int j:neighbours) {
+                neighbourY = field.y + j;
+                if (neighbourX >= 0 && neighbourX < this.size
+                    && neighbourY >= 0 && neighbourY < this.size
+                    && this.fields[neighbourX][neighbourY].reveal()) {
+                    bombCount++;
+                }
+            }
+        }
+        return bombCount;
     }
 }

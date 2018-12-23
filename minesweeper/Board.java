@@ -80,6 +80,7 @@ public class Board {
                     } else if (currentField.isMarked) {
                         output += "#?#";
                     } else {
+                        // output += currentField.print();
                         output += "###";
                     }
                 }
@@ -98,9 +99,14 @@ public class Board {
         System.out.println(output);
     }
 
-    private Field getFieldFromCoordinates (String coordinates) {
+    public Field getFieldFromCoordinates (String coordinates) {
         int x = this.alphabet.indexOf(coordinates.substring(0, 1).toLowerCase());
         int y = Integer.parseInt(coordinates.substring(1));
+
+        int xLimit = size - 1;
+        if (x > xLimit || y > size) {
+            return null;
+        }
         return this.fields[x][y - 1];
     }
 
@@ -113,11 +119,15 @@ public class Board {
         Field field = getFieldFromCoordinates(coordinates);
         field.isVisited = true;
         if (this.getBombCount(field) == 0) {
+            this.revealNeighbours(field);
             this.recursiveReveal(field);
         } else {
-            field.isRevealed = true;
-            this.revealed++;
+            if (!field.isRevealed) {
+                field.isRevealed = true;
+                this.revealed++;
+            }
         }
+System.out.println("field[" + field.x + "][" + field.y + "] is revealed = " + field.isRevealed);
         return field.reveal();
     }
 
@@ -127,6 +137,7 @@ public class Board {
         Integer neighbourY;
 
         if (!field.isRevealed) {
+            field.isRevealed = true;
             this.revealed++;
         }
 
@@ -189,5 +200,15 @@ public class Board {
             }
         }
         return bombCount;
+    }
+
+    public void revealBombs() {
+        for (int x = 0; x < size; x++) {
+            for (int y = 0; y < size; y++) {
+                if (this.fields[x][y].reveal()) {
+                    this.fields[x][y].isRevealed = true;
+                }
+            }
+        }
     }
 }

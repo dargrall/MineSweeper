@@ -5,6 +5,8 @@ import minesweeper.EmptyField;
 import minesweeper.Board;
 
 import java.util.Scanner;
+import java.util.regex.Pattern;
+import java.util.regex.Matcher;
 
 public class Game {
     public static void main(String[] args) {
@@ -17,6 +19,9 @@ public class Game {
         String coordinates = "";
         Boolean validInput = false;
         Field selectedField;
+        String validFormat = "[A-Z][0-9]{1,2}";
+        Pattern pattern = Pattern.compile(validFormat);
+        Matcher matcher;
 
 
         while (!gameOver) {
@@ -36,9 +41,11 @@ public class Game {
                 System.out.println("Please enter coordinates, for example 'C4':");
                 coordinates = sc.next();
                 // Put some validation here
-                //
-                if (true) {
-                    validInput = true;
+                matcher = pattern.matcher(coordinates);
+                if (matcher.matches()) {
+                    if (board.getFieldFromCoordinates(coordinates) != null) {
+                        validInput = true;
+                    }
                 }
             }
 
@@ -47,15 +54,18 @@ public class Game {
             } else {
                 gameOver = board.revealField(coordinates);
             }
-            
+
             if (emptyFields ==  board.getRevealed()) {
                 gameOver = true;
                 won = true;
             }
 System.out.println("Revealed:" + board.getRevealed() + " EmptyFields:" + emptyFields);
-System.out.println(board.getRevealed() == emptyFields);
         }
 
+        if (!won) {
+            board.revealBombs();
+        }
+        
         board.print();
         if (won) {
             System.out.println("Congratulations you won!");

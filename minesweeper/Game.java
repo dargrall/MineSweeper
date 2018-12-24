@@ -59,7 +59,6 @@ public class Game {
                 gameOver = true;
                 won = true;
             }
-System.out.println("Revealed:" + board.getRevealed() + " EmptyFields:" + emptyFields);
         }
 
         if (!won) {

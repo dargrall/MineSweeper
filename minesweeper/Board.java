@@ -127,7 +127,6 @@ public class Board {
                 this.revealed++;
             }
         }
-System.out.println("field[" + field.x + "][" + field.y + "] is revealed = " + field.isRevealed);
         return field.reveal();
     }
 
